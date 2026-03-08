@@ -2,7 +2,7 @@ name: CI/CD Deploy to Tomcat
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   # BUILD JOB
