@@ -62,7 +62,7 @@ jobs:
           --upload-file *.war \
           "http://${{ secrets.TEST_HOST }}:8080/manager/text/deploy?path=/myapp&update=true"
 
-  # DEPLOY PROD
+  # DEPLOY PRO
   deploy-prod:
     needs: deploy-test
     runs-on: ubuntu-latest
