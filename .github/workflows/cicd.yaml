@@ -1,5 +1,4 @@
 name: CI/CD Deploy to Tomcat
-
 on:
   push:
     branches:
