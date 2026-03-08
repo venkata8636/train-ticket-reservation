@@ -75,6 +75,6 @@ jobs:
 
       - name: Deploy to PROD
         run: |
-          curl -v -u ${{ secrets.PROD_USER }}:${{ secrets.PROD_PASSWORD }} \
-          --upload-file *.war \
-          "http://${{ secrets.PROD_HOST }}:8080/manager/text/deploy?path=/myapp&update=true"
+            curl -v -u ${{ secrets.PROD_USER }}:${{ secrets.PROD_PASSWORD }} \
+            --upload-file *.war \
+            "http://${{ secrets.PROD_HOST }}:8080/manager/text/deploy?path=/myapp&update=true"
