@@ -1,38 +1,81 @@
-name: ci/cd pipeline to deploy to tomcat
-on: 
+name: CI/CD Deploy to Tomcat
+
+on:
   push:
-    branches: master
+    branches:
+      - main
+
 jobs:
-  build-deploy:
+  # BUILD JOB
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout code
-        uses: actions/checkout@v3
-      
-      - name: set-up jdk
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '17'   # Updated Java version
-      
-      - name: validate with maven
-        run: mvn validate
+          distribution: temurin
+          java-version: 17
+          cache: maven
 
-      - name: compile with maven
-        run: mvn compile
-      
-      - name: test with maven
-        run: mvn test
-      
-      - name: package with maven
+      - name: Build WAR
         run: mvn clean package
 
-      - name: verify WAR file
-        run: ls -lh target/
-        
-      - name: Sonar scan 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: myapp
+          path: target/*.war
+
+  # DEPLOY DEV
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: DEV
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: myapp
+
+      - name: Deploy to DEV
         run: |
-           mvn clean verify sonar:sonar \
-            -Dsonar.projectKey=train-ticket-reservation \
-            -Dsonar.host.url="${{ secrets.SONAR_HOST }}" \
-            -Dsonar.login="${{ secrets.SONAR_TOKEN }}"
+          curl -u ${{ secrets.DEV_USER }}:${{ secrets.DEV_PASSWORD }} \
+          --upload-file *.war \
+          "http://${{ secrets.DEV_HOST }}:8080/manager/text/deploy?path=/myapp&update=true"
+
+  # DEPLOY TEST
+  deploy-test:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: TEST
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: myapp
+
+      - name: Deploy to TEST
+        run: |
+          curl -u ${{ secrets.TEST_USER }}:${{ secrets.TEST_PASSWORD }} \
+          --upload-file *.war \
+          "http://${{ secrets.TEST_HOST }}:8080/manager/text/deploy?path=/myapp&update=true"
+
+  # DEPLOY PROD
+  deploy-prod:
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    environment: PROD
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: myapp
+
+      - name: Deploy to PROD
+        run: |
+          curl -u ${{ secrets.PROD_USER }}:${{ secrets.PROD_PASSWORD }} \
+          --upload-file *.war \
+          "http://${{ secrets.PROD_HOST }}:8080/manager/text/deploy?path=/myapp&update=true"
